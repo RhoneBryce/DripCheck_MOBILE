@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "DripCheck",
+    "slug": "dripcheck",
+    "ios": {
+      "newArchEnabled": false
+    },
+    "android": {
+      "newArchEnabled": false
+    },
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./image_upload/DripCheckLogo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./image_upload/DripCheckLogo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dripcheck.app",
+      "infoPlist": {
+        "UILaunchStoryboardName": "SplashScreen",
+        "UILaunchStoryboardName": "SplashScreen"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./image_upload/DripCheckLogo.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.dripcheck.app"
+    },
+    "web": {
+      "favicon": "./image_upload/DripCheckLogo.png"
+    }
+  }
+}
+
