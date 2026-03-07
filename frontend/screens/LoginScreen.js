@@ -5,12 +5,12 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   KeyboardAvoidingView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '../constants/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');

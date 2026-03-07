@@ -4,12 +4,12 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '../constants/colors';
 import TrendCard from '../components/TrendCard';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Sample trend data
 const trends = [

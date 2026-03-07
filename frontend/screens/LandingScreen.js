@@ -5,11 +5,11 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../constants/colors';
 
 const { width, height } = Dimensions.get('window');

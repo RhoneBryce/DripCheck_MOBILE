@@ -4,11 +4,11 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '../constants/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ProfileScreen = ({user}) => {
   return (

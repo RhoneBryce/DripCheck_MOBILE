@@ -5,13 +5,12 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../constants/colors';
 import OutfitCard from '../components/OutfitCard';
 
