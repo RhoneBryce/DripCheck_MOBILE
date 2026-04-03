@@ -1,23 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react'; // Added useCallback
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  StatusBar,
-  ActivityIndicator,
-  Modal,
-  Linking,
-  ScrollView, // Added ScrollView
-  RefreshControl, // Added RefreshControl
-} from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Image, StatusBar, ActivityIndicator, Modal, Linking, ScrollView, RefreshControl, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../constants/colors';
 import OutfitCard from '../components/OutfitCard';
-import { Platform } from 'react-native';
+import styles from '../styles/HomeScreenStyles';
 
 const OPENWEATHER_API_KEY = 'b2e243eae1e1f558807d9b4ece5696f4';
 
@@ -54,23 +42,16 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
 
   const fetchWeather = async () => {
     setWeatherError('');
-    if (!refreshing) setLoadingWeather(true);
+    if (!refreshing) {
+      setLoadingWeather(true);
+    }
 
     try {
-      /*
-      setWeather({
-        //tempC: 12,           // COLD
-        tempC: 26,        // HOT
-        main: 'Clouds',        // Rain, Clear, Clouds, Snow, Thunderstorm, Drizzle
-        city: 'Baguio',
-      });
-      setLoadingWeather(false);
-      setRefreshing(false);
-      return;
-      */
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setWeatherError('Location permission denied.');
+        setLoadingWeather(false);
+        setRefreshing(false);
         return;
       }
 
@@ -85,7 +66,9 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
       const res = await fetch(url);
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data?.message || 'Failed to fetch weather');
+      if (!res.ok) {
+        throw new Error(data?.message || 'Failed to fetch weather');
+      }
 
       setWeather({
         tempC: Math.round(data.main.temp),
@@ -101,7 +84,6 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
     }
   };
 
-
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchWeather();
@@ -111,7 +93,6 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
     fetchWeather();
   }, []);
 
-  // --- Shopping Links Logic ---
   const openShop = (platform) => {
     let searchTerm = 'stylish casual outfit';
     if (weather?.tempC >= 25) searchTerm = 'hot weather summer outfit';
@@ -144,7 +125,6 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
     >
       <StatusBar barStyle="dark-content" backgroundColor={colors.offWhiteBackground} />
       <SafeAreaView style={styles.safeArea}>
-  
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -152,12 +132,11 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={[colors.primaryBlue]} // Android spinner color
-              tintColor={colors.primaryBlue} // iOS spinner color
+              colors={[colors.primaryBlue]}
+              tintColor={colors.primaryBlue}
             />
           }
         >
-          {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoWrapper}>
               <Image
@@ -171,7 +150,6 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
             </TouchableOpacity>
           </View>
 
-          {/* Weather Widget */}
           <View style={styles.weatherCard}>
             {loadingWeather && !refreshing ? (
               <View style={{ alignItems: 'center' }}>
@@ -185,7 +163,7 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
                   <Text style={styles.retryText}>Retry</Text>
                 </TouchableOpacity>
               </View>
-            ) : (
+            ) : weather ? (
               <>
                 <View style={styles.weatherRow}>
                   <Text style={styles.weatherIcon}>{icon}</Text>
@@ -195,14 +173,13 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
                   {weather.main}{weather.city ? ` • ${weather.city}` : ''}
                 </Text>
                 <Text style={styles.weatherMessage}>{message}</Text>
-                {!!weather.description && (
+                {weather.description ? (
                   <Text style={[styles.weatherMessage, { marginTop: 6 }]}>{weather.description}</Text>
-                )}
+                ) : null}
               </>
-            )}
+            ) : null}
           </View>
 
-          {/* Outfit of the Day Card */}
           <OutfitCard 
             user={user} 
             weather={weather} 
@@ -211,7 +188,6 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
           />
         </ScrollView>
 
-        {/* --- STORE LINKS MODAL --- */}
         <Modal
           animationType="fade"
           transparent={true}
@@ -249,119 +225,7 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
             </View>
           </View>
         </Modal>
-
       </SafeAreaView>
     </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  safeArea: { flex: 1 },
-  scrollContent: {
-    paddingBottom: 20, // Space at the bottom so content isn't cut off
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 5,
-    paddingBottom: 10,
-  },
-  logoWrapper: { flex: 1, alignItems: 'center' },
-  logo: { width: 240, height: 120 },
-  logoutButton: { position: 'absolute', right: 20, top: 20 },
-  logoutText: { color: colors.primaryBlue, fontSize: 16, fontWeight: '600' },
-
-  weatherCard: {
-    backgroundColor: colors.white,
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 20,
-    marginBottom: 16,
-    alignItems: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    minHeight: 140,
-    justifyContent: 'center',
-  },
-  weatherRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  weatherIcon: { fontSize: 32, marginRight: 12 },
-  weatherTemp: { fontSize: 28, fontWeight: 'bold', color: colors.textPrimary },
-  weatherCondition: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  weatherMessage: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
-
-  retryBtn: {
-    marginTop: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.primaryBlue,
-  },
-  retryText: { color: colors.primaryBlue, fontWeight: '600' },
-
-  /* --- MODAL STYLES --- */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    width: '85%',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  shopLinksTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    flex: 1,
-  },
-  closeModalText: {
-    fontSize: 20,
-    color: colors.textSecondary,
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
-  shopButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  shopBtn: {
-    width: '48%',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shopBtnText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-    letterSpacing: 1,
-  }
-});

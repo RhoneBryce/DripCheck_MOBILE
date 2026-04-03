@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import colors from '../constants/colors';
-
-// Import your custom components and sub-screens
 import BottomTabBar from '../components/BottomTabBar';
 import HomeScreen from './HomeScreen';
 import ClosetScreen from './ClosetScreen';
