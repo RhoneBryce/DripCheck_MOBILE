@@ -71,8 +71,6 @@ router.post('/login', async (req, res) => {
     return res.status(500).json({ message: err.message });
   }
 });
-const Account = require('../models/Account');
-
 // Update Profile (Image and Name)
 router.put('/update/:id', async (req, res) => {
   try {
