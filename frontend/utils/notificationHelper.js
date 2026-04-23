@@ -71,17 +71,15 @@ export const scheduleDailyOutfitNotification = async (hours, minutes) => {
 };
 */
 // EXPO NOTIFICATION
-// src/utils/notificationHelper.js
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-
-// This tells the OS to show the alert even if the user is currently inside the app
+// FIXED THE WARNING: Replaced shouldShowAlert with shouldShowBanner
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,      // Show the banner
-    shouldPlaySound: true,      // Play the "ding"
-    shouldSetBadge: false,      // Don't change app icon badge count
+    shouldShowBanner: true, 
+    shouldPlaySound: true,
+    shouldSetBadge: false,
   }),
 });
 
@@ -92,37 +90,57 @@ export const scheduleDailyOutfitNotification = async (hours, minutes) => {
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== 'granted') return;
 
-    // 1. Create a Channel (Crucial for Android)
-    const channelId = 'daily-outfits';
+    // Force strict numbers
+    const safeHours = Number(hours);
+    const safeMinutes = Number(minutes);
+
+    if (isNaN(safeHours) || isNaN(safeMinutes)) {
+      console.error("❌ ABORTING: Invalid time passed:", hours, minutes);
+      return; 
+    }
+
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync(channelId, {
+      await Notifications.setNotificationChannelAsync('daily-outfits', {
         name: 'Daily Outfit Reminders',
         importance: Notifications.AndroidImportance.HIGH,
         sound: 'default',
       });
     }
 
+    // Flush old alarms
     await Notifications.cancelAllScheduledNotificationsAsync();
+    await new Promise(resolve => setTimeout(resolve, 500)); 
+    await Notifications.dismissAllNotificationsAsync(); 
 
-    // 2. Use the "type" based trigger structure
+    // THE TRUE FIX: Explicitly define 'type' to satisfy Expo, and keep iOS clean!
+    const triggerParams = Platform.OS === 'android'
+      ? {
+          type: 'calendar',
+          hour: safeHours,
+          minute: safeMinutes,
+          repeats: true,
+          channelId: 'daily-outfits', // Android needs this
+        }
+      : {
+          type: 'calendar',
+          hour: safeHours,
+          minute: safeMinutes,
+          repeats: true,
+          // iOS gets a perfectly clean calendar object
+        };
+
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: "👗 Ready for your DripCheck?",
+        title: "👗 DripCheck Reminder",
         body: "Tap to see today's weather-perfect outfit!",
+        sound: true,
       },
-      trigger: {
-        // Explicitly using the calendar type fixes the "invalid trigger" error
-        hour: hours,
-        minute: minutes,
-        repeats: true,
-        channelId: channelId, // Required for some Android versions
-      },
+      trigger: triggerParams,
     });
 
-    console.log(`✅ Success: Scheduled for ${hours}:${minutes}`);
+    console.log(`✅ System Scheduled for exactly ${safeHours}:${safeMinutes < 10 ? '0'+safeMinutes : safeMinutes}`);
   } catch (error) {
     console.error("Scheduling Error:", error);
-    throw error; 
   }
 };
 
@@ -132,9 +150,8 @@ export const testInstantNotification = async () => {
       title: "DripCheck Test 🚀",
       body: "This is what your daily reminder looks like!",
     },
-    trigger: { 
-      seconds: 2,
-      channelId: 'daily-outfits', // Link it to the channel you created above
-    },
+    trigger: Platform.OS === 'android' 
+      ? { seconds: 2, channelId: 'daily-outfits' }
+      : { seconds: 2 },
   });
 };

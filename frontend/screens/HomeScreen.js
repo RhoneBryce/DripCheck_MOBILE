@@ -43,7 +43,7 @@ export default function HomeScreen({ user, onLogout, API_URL, setUser }) {
   const [weather, setWeather] = useState(null); 
   const [weatherError, setWeatherError] = useState('');
   const [showShops, setShowShops] = useState(false);
-
+  
   // Notification States
   const [showNotifModal, setShowNotifModal] = useState(false);
   const [notifTime, setNotifTime] = useState(new Date());

@@ -29,7 +29,7 @@ const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [localImage, setLocalImage] = useState(null); 
-  
+  const [timeChanged, setTimeChanged] = useState(false);
   // Notification States
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempNotifTime, setTempNotifTime] = useState(new Date());
@@ -134,8 +134,11 @@ const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
           setUser({ ...user, ...updatedUser });
         }
         
-        // Update the actual device notification schedule
-        await scheduleDailyOutfitNotification(tempNotifTime.getHours(), tempNotifTime.getMinutes());
+        if (timeChanged) {
+          await scheduleDailyOutfitNotification(tempNotifTime.getHours(), tempNotifTime.getMinutes());
+          setTimeChanged(false); // Reset the flag after saving
+          console.log("Time was changed, alarm rescheduled!");
+        }
         
         Alert.alert('Success', 'Profile updated successfully!');
         setLocalImage(null);
@@ -276,7 +279,7 @@ const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
                       if (Platform.OS === 'android') {
                         setShowTimePicker(false);
                       }
-                      if (date) setTempNotifTime(date);
+                      if (date) {setTempNotifTime(date); setTimeChanged(true);}
                     }}
                   />
                 </View>
