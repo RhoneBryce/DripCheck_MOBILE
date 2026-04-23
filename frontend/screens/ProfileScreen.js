@@ -10,7 +10,8 @@ import {
   Alert, 
   Modal, 
   TextInput, 
-  StyleSheet 
+  StyleSheet,
+  Platform 
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '../constants/colors';
@@ -19,11 +20,19 @@ import styles from '../styles/ProfileScreenStyles';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImageToCloudinary } from '../utils/closetHelpers';
 
+// NEW IMPORTS FOR NOTIFICATIONS
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { scheduleDailyOutfitNotification } from '../utils/notificationHelper';
+
 const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
   const [itemCount, setItemCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [localImage, setLocalImage] = useState(null); 
+  
+  // Notification States
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [tempNotifTime, setTempNotifTime] = useState(new Date());
   
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -32,9 +41,17 @@ const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
     confirmPassword: ''
   });
 
-  // Sync form name if user object updates
+  // Sync form name and notification time if user object updates
   useEffect(() => {
     if (user?.name) setEditForm(prev => ({ ...prev, name: user.name }));
+    
+    // Initialize the time picker with the user's saved preference
+    if (user?.notificationTime) {
+      const d = new Date();
+      d.setHours(user.notificationTime.hours || 8);
+      d.setMinutes(user.notificationTime.minutes || 0);
+      setTempNotifTime(d);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -70,7 +87,7 @@ const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
 
     if (!result.canceled) {
       setLocalImage(result.assets[0].uri);
-      setEditModalVisible(true); // Ensure modal is open to see preview
+      setEditModalVisible(true); 
     }
   };
 
@@ -79,7 +96,14 @@ const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
     
     setUpdating(true);
     try {
-      let payload = { name: editForm.name };
+      // Add notification time to payload
+      let payload = { 
+        name: editForm.name,
+        notificationTime: {
+          hours: tempNotifTime.getHours(),
+          minutes: tempNotifTime.getMinutes()
+        }
+      };
 
       // 1. Upload image only if changed
       if (localImage) {
@@ -109,6 +133,10 @@ const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
         if (setUser) {
           setUser({ ...user, ...updatedUser });
         }
+        
+        // Update the actual device notification schedule
+        await scheduleDailyOutfitNotification(tempNotifTime.getHours(), tempNotifTime.getMinutes());
+        
         Alert.alert('Success', 'Profile updated successfully!');
         setLocalImage(null);
         setEditModalVisible(false);
@@ -164,6 +192,17 @@ const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
               <Text style={styles.detailLabel}>Email Address</Text>
               <Text style={styles.detailValue}>{user.email}</Text>
             </View>
+            
+            {/* NEW: Daily Reminder Read-Only View */}
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Daily Reminder</Text>
+              <Text style={styles.detailValue}>
+                {user?.notificationTime 
+                  ? `${user.notificationTime.hours}:${user.notificationTime.minutes < 10 ? '0' : ''}${user.notificationTime.minutes}`
+                  : 'Not Set'}
+              </Text>
+            </View>
+
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Member Since</Text>
               <Text style={styles.detailValue}>
@@ -185,66 +224,102 @@ const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
       {/* UNIFIED EDIT MODAL */}
       <Modal visible={editModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Profile</Text>
-            
-            {/* TAPPABLE PREVIEW IMAGE */}
-            <View style={{ alignItems: 'center', marginBottom: 20 }}>
-              <TouchableOpacity onPress={handlePickPhoto}>
-                <Image 
-                  source={{ uri: localImage || user.profileImage || 'https://via.placeholder.com/100' }} 
-                  style={styles.fullImage} 
-                />
-                <View style={styles.cameraBadge}>
-                   <Text style={{fontSize: 12}}>📸</Text>
-                </View>
+          <ScrollView contentContainerStyle={{flexGrow: 1, justifyContent: 'center'}} showsVerticalScrollIndicator={false}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              
+              {/* TAPPABLE PREVIEW IMAGE */}
+              <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                <TouchableOpacity onPress={handlePickPhoto}>
+                  <Image 
+                    source={{ uri: localImage || user.profileImage || 'https://via.placeholder.com/100' }} 
+                    style={styles.fullImage} 
+                  />
+                  <View style={styles.cameraBadge}>
+                     <Text style={{fontSize: 12}}>📸</Text>
+                  </View>
+                </TouchableOpacity>
+                <Text style={{ color: colors.textSecondary, marginTop: 8, fontSize: 12 }}>
+                  Tap photo to change
+                </Text>
+              </View>
+
+              <Text style={styles.label}>Full Name</Text>
+              <TextInput 
+                style={styles.input} 
+                value={editForm.name} 
+                onChangeText={(t) => setEditForm({...editForm, name: t})}
+              />
+
+              {/* NEW: Daily Reminder Edit View */}
+              <Text style={styles.label}>Daily Reminder</Text>
+              <TouchableOpacity 
+                style={styles.input} 
+                onPress={() => setShowTimePicker(!showTimePicker)} // Toggles it open/closed
+                activeOpacity={0.7}
+              >
+                <Text style={{ color: colors.textPrimary, paddingVertical: Platform.OS === 'ios' ? 4 : 0 }}>
+                  {tempNotifTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
               </TouchableOpacity>
-              <Text style={{ color: colors.textSecondary, marginTop: 8, fontSize: 12 }}>
-                Tap photo to change
-              </Text>
+
+              {/* FIXED PICKER WRAPPER */}
+              {showTimePicker && (
+                <View style={{ height: 200, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+                  <DateTimePicker
+                    value={tempNotifTime}
+                    mode="time"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    textColor="black" // Forces black text for iOS dark mode compatibility
+                    style={{ width: '100%', height: 200 }} // Explicit height is required for iOS
+                    onChange={(event, date) => {
+                      if (Platform.OS === 'android') {
+                        setShowTimePicker(false);
+                      }
+                      if (date) setTempNotifTime(date);
+                    }}
+                  />
+                </View>
+              )}
+
+              <Text style={styles.label}>New Password</Text>
+              <TextInput 
+                style={styles.input} 
+                secureTextEntry 
+                placeholder="Leave blank to keep current"
+                value={editForm.password}
+                onChangeText={(t) => setEditForm({...editForm, password: t})}
+              />
+
+              <Text style={styles.label}>Confirm New Password</Text>
+              <TextInput 
+                style={styles.input} 
+                secureTextEntry 
+                value={editForm.confirmPassword}
+                onChangeText={(t) => setEditForm({...editForm, confirmPassword: t})}
+              />
+
+              <TouchableOpacity 
+                style={[styles.saveBtn, updating && { opacity: 0.7 }]} 
+                onPress={handleSaveAllDetails} 
+                disabled={updating}
+              >
+                 {updating ? <ActivityIndicator color="#fff"/> : <Text style={styles.saveBtnText}>Save All Changes</Text>}
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => { 
+                  setEditModalVisible(false); 
+                  setLocalImage(null); 
+                  setShowTimePicker(false); // reset picker state
+              }}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
-
-            <Text style={styles.label}>Full Name</Text>
-            <TextInput 
-              style={styles.input} 
-              value={editForm.name} 
-              onChangeText={(t) => setEditForm({...editForm, name: t})}
-            />
-
-            <Text style={styles.label}>New Password</Text>
-            <TextInput 
-              style={styles.input} 
-              secureTextEntry 
-              placeholder="Leave blank to keep current"
-              value={editForm.password}
-              onChangeText={(t) => setEditForm({...editForm, password: t})}
-            />
-
-            <Text style={styles.label}>Confirm New Password</Text>
-            <TextInput 
-              style={styles.input} 
-              secureTextEntry 
-              value={editForm.confirmPassword}
-              onChangeText={(t) => setEditForm({...editForm, confirmPassword: t})}
-            />
-
-            <TouchableOpacity 
-              style={[styles.saveBtn, updating && { opacity: 0.7 }]} 
-              onPress={handleSaveAllDetails} 
-              disabled={updating}
-            >
-               {updating ? <ActivityIndicator color="#fff"/> : <Text style={styles.saveBtnText}>Save All Changes</Text>}
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => { setEditModalVisible(false); setLocalImage(null); }}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </LinearGradient>
   );
 };
-
 
 export default ProfileScreen;

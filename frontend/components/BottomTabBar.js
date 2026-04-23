@@ -1,42 +1,61 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import colors from '../constants/colors';
+// Import Ionicons - the gold standard for mobile tabs
+import { Ionicons } from '@expo/vector-icons'; 
 
-const BottomTabBar = ({ activeTab, setActiveTab }) => {
+const BottomTabBar = ({ activeTab, setActiveTab, user }) => {
   const tabs = [
-    { id: 'Home', label: 'Home', icon: '⌂' },
-    { id: 'Closet', label: 'Closet', icon: '衣' },
-    { id: 'Trend', label: 'Trend', icon: '↑' },
-    { id: 'Profile', label: 'Profile', icon: '○' },
+    { id: 'Home', label: 'Home', activeIcon: 'home', inactiveIcon: 'home-outline' },
+    { id: 'Closet', label: 'Closet', activeIcon: 'shirt', inactiveIcon: 'shirt-outline' },
+    { id: 'Trend', label: 'Trend', activeIcon: 'sparkles', inactiveIcon: 'sparkles-outline' },
+    { id: 'Profile', label: 'Profile', activeIcon: 'person', inactiveIcon: 'person-outline' },
   ];
 
   return (
     <View style={styles.container}>
-      {tabs.map((tab) => (
-        <TouchableOpacity
-          key={tab.id}
-          style={styles.tab}
-          onPress={() => setActiveTab(tab.id)}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.icon,
-              activeTab === tab.id ? styles.activeIcon : styles.inactiveIcon,
-            ]}
+      {tabs.map((tab) => {
+        const isActive = activeTab === tab.id;
+
+        return (
+          <TouchableOpacity
+            key={tab.id}
+            style={styles.tab}
+            onPress={() => setActiveTab(tab.id)}
+            activeOpacity={0.8}
           >
-            {tab.icon}
-          </Text>
-          <Text
-            style={[
-              styles.label,
-              activeTab === tab.id ? styles.activeLabel : styles.inactiveLabel,
-            ]}
-          >
-            {tab.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+            {/* ICON SECTION */}
+            <View style={styles.iconContainer}>
+              {tab.id === 'Profile' && user?.profileImage ? (
+                <Image 
+                  source={{ uri: user.profileImage }} 
+                  style={[styles.miniProfile, isActive && styles.activeProfileBorder]} 
+                />
+              ) : (
+                <Ionicons 
+                  name={isActive ? tab.activeIcon : tab.inactiveIcon} 
+                  size={24} 
+                  color={colors.white} 
+                  style={{ opacity: isActive ? 1 : 0.6 }}
+                />
+              )}
+            </View>
+
+            {/* LABEL */}
+            <Text
+              style={[
+                styles.label,
+                isActive ? styles.activeLabel : styles.inactiveLabel,
+              ]}
+            >
+              {tab.label}
+            </Text>
+
+            {/* PAGE INDICATOR (The Dot) */}
+            {isActive && <View style={styles.indicator} />}
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };
@@ -45,8 +64,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: colors.primaryBlue,
-    height: 70,
-    paddingBottom: 10,
+    height: 75, // Slightly taller to fit the indicator
+    paddingBottom: 12,
     paddingTop: 8,
     paddingHorizontal: 8,
   },
@@ -54,20 +73,25 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative', // Necessary for the indicator positioning
   },
-  icon: {
-    fontSize: 22,
+  iconContainer: {
     marginBottom: 2,
   },
-  activeIcon: {
-    opacity: 1,
+  miniProfile: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
   },
-  inactiveIcon: {
-    opacity: 0.5,
+  activeProfileBorder: {
+    borderColor: colors.white,
+    borderWidth: 2,
   },
   label: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   activeLabel: {
     color: colors.white,
@@ -77,7 +101,15 @@ const styles = StyleSheet.create({
     color: colors.white,
     opacity: 0.6,
   },
+  // THE INDICATOR
+  indicator: {
+    position: 'absolute',
+    bottom: -4, // Sits right at the bottom of the bar
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.white,
+  },
 });
 
 export default BottomTabBar;
-

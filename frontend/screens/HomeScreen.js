@@ -6,8 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../constants/colors';
 import OutfitCard from '../components/OutfitCard';
 import styles from '../styles/HomeScreenStyles';
-
+import DateTimePicker from '@react-native-community/datetimepicker'; 
+import { scheduleDailyOutfitNotification, testInstantNotification } from '../utils/notificationHelper'; // Import the helper
 const OPENWEATHER_API_KEY = 'b2e243eae1e1f558807d9b4ece5696f4';
+import { Alert } from 'react-native'; // Make sure Alert is imported
+
 
 function getWeatherEmoji(main) {
   switch (main) {
@@ -33,14 +36,83 @@ function getWeatherMessage(main) {
   }
 }
 
-export default function HomeScreen({ user, onLogout, API_URL }) {
+export default function HomeScreen({ user, onLogout, API_URL, setUser }) {
+  // 1. DECLARE MISSING STATE
   const [loadingWeather, setLoadingWeather] = useState(true);
   const [refreshing, setRefreshing] = useState(false); 
   const [weather, setWeather] = useState(null); 
   const [weatherError, setWeatherError] = useState('');
   const [showShops, setShowShops] = useState(false);
 
+  // Notification States
+  const [showNotifModal, setShowNotifModal] = useState(false);
+  const [notifTime, setNotifTime] = useState(new Date());
+
+  // 2. MOVE HANDLER INSIDE THE COMPONENT
+  const handleConfirmNotifPreference = async () => {
+    const hours = notifTime.getHours();
+    const minutes = notifTime.getMinutes();
+
+    try {
+      // 1. Schedule locally
+      await scheduleDailyOutfitNotification(hours, minutes);
+
+      // 2. Save to Backend
+      const response = await fetch(`${API_URL}/api/auth/update/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          hasSetPreferences: true,
+          notificationTime: { hours, minutes } 
+        }),
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        
+        // --- CRITICAL CHANGE ---
+        setShowNotifModal(false); // Close UI FIRST
+        
+        // Small delay to let the modal slide away before global state update
+        setTimeout(() => {
+          if(setUser) setUser(updatedUser); 
+          Alert.alert("All set!", `We'll remind you at ${hours}:${minutes < 10 ? '0' + minutes : minutes} every day.`);
+        }, 300);
+      }
+    } catch (error) {
+      console.error("Notif Error:", error);
+      Alert.alert("Error", "Could not save notification preferences.");
+    }
+  };
+
+  // Trigger modal if user hasn't set preferences yet
+  useEffect(() => {
+    // Only open if we definitely have a user AND their preference is explicitly false
+    // Also check if the modal is already being hidden to prevent loops
+    if (user && user.hasSetPreferences === false) {
+      setShowNotifModal(true);
+    } else {
+      setShowNotifModal(false);
+    }
+  }, [user?.hasSetPreferences]); // Only watch the specific boolean, not the whole object
+
+  
   const fetchWeather = async () => {
+    // --- TESTING OVERRIDE: Uncomment one and it will skip all API/GPS logic ---
+    /*
+    const testWeather = { tempC: 32, main: 'Clear', description: 'Sunny day', city: 'Test Hot' };
+    // const testWeather = { tempC: 5, main: 'Snow', description: 'Freezing', city: 'Test Cold' };
+    // const testWeather = { tempC: 18, main: 'Rain', description: 'Heavy rain', city: 'Test Rainy' };
+
+    if (testWeather) {
+      setWeather(testWeather);
+      setLoadingWeather(false);
+      setRefreshing(false);
+      return; // Stops the function here
+    }
+    */
+    // --- END TESTING OVERRIDE ---
+
     setWeatherError('');
     if (!refreshing) {
       setLoadingWeather(true);
@@ -186,6 +258,18 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
             API_URL={API_URL}
             onPressMatches={() => setShowShops(true)} 
           />
+          <TouchableOpacity 
+            style={[styles.retryBtn, { backgroundColor: colors.primaryBlue, margin: 20 }]} 
+            onPress={async () => {
+              await testInstantNotification();
+              Alert.alert("Check your phone!", "A notification will appear in soon.");
+            }}
+          >
+            {/* Add the color and fontWeight here */}
+            <Text style={[styles.retryText, { color: colors.white, fontWeight: '700' }]}>
+              Test Instant Notification
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
 
         <Modal
@@ -225,7 +309,56 @@ export default function HomeScreen({ user, onLogout, API_URL }) {
             </View>
           </View>
         </Modal>
+        {/* DAILY NOTIFICATION PREFERENCE MODAL */}
+        <Modal visible={showNotifModal} animationType="fade" transparent={true}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.premiumModal}>
+              {/* Icon/Emoji Header */}
+              <View style={styles.iconCircle}>
+                <Text style={{ fontSize: 30 }}>🔔</Text>
+              </View>
+
+              <Text style={styles.notifTitle}>Daily Style Reminder</Text>
+              <Text style={styles.notifSubtitle}>
+                What time should we send your daily outfit recommendation?
+              </Text>
+
+              <View style={styles.pickerWrapper}>
+              <DateTimePicker
+                value={notifTime}
+                mode="time"
+                is24Hour={false}
+                display="spinner" // Best for iOS modals
+                textColor="black" // Ensures visibility on white background
+                onChange={(event, selectedDate) => {
+                  if (selectedDate) setNotifTime(selectedDate);
+                }}
+                style={styles.iosPicker} 
+              />
+            </View>
+
+              <TouchableOpacity 
+                style={styles.primaryBtn} 
+                onPress={handleConfirmNotifPreference}
+              >
+                <Text style={styles.primaryBtnText}>Set Daily Reminder</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.secondaryBtn} 
+                onPress={() => setShowNotifModal(false)}
+              >
+                <Text style={styles.secondaryBtnText}>Maybe later</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.footerNote}>
+                You can always change this later in your Profile settings.
+              </Text>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </LinearGradient>
   );
+  
 }

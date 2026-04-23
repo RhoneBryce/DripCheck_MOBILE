@@ -3,10 +3,18 @@
     "name": "DripCheck",
     "slug": "dripcheck",
     "ios": {
-      "newArchEnabled": false
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dripcheck.app",
+      "infoPlist": {
+        "UILaunchStoryboardName": "SplashScreen"
+      }
     },
     "android": {
-      "newArchEnabled": false
+      "adaptiveIcon": {
+        "foregroundImage": "./image_upload/DripCheckLogo.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.dripcheck.app"
     },
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,24 +28,11 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.dripcheck.app",
-      "infoPlist": {
-        "UILaunchStoryboardName": "SplashScreen",
-        "UILaunchStoryboardName": "SplashScreen"
-      }
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./image_upload/DripCheckLogo.png",
-        "backgroundColor": "#FFFFFF"
-      },
-      "package": "com.dripcheck.app"
-    },
     "web": {
       "favicon": "./image_upload/DripCheckLogo.png"
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }
-

@@ -15,7 +15,7 @@ const DashboardScreen = ({ user, onLogout, setUser }) => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'Home':
-        return <HomeScreen user={user} onLogout={onLogout} API_URL={API_URL} />;
+        return <HomeScreen user={user} setUser={setUser} onLogout={onLogout} API_URL={API_URL} />;
       case 'Closet':
         return <ClosetScreen user={user} API_URL={API_URL} setActiveTab={setActiveTab} />;
       case 'Trend':
@@ -30,7 +30,7 @@ const DashboardScreen = ({ user, onLogout, setUser }) => {
   return (
     <View style={styles.dashboardContainer}>
       <View style={styles.tabContent}>{renderTabContent()}</View>
-      <BottomTabBar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <BottomTabBar user={user}  activeTab={activeTab} setActiveTab={setActiveTab} />
     </View>
   );
 };

@@ -109,6 +109,99 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
     letterSpacing: 1,
+  },
+  premiumModal: {
+    backgroundColor: '#fff',
+    borderRadius: 30,
+    padding: 25,
+    alignItems: 'center',
+    width: '85%',
+    // Professional Shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  iconCircle: {
+    width: 70,
+    height: 70,
+    backgroundColor: colors.offWhiteBackground,
+    borderRadius: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: -10, // Slight lift
+  },
+  notifTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  notifSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 10,
+  },
+  pickerContainer: {
+    width: '100%',
+    marginVertical: 15,
+  },
+  primaryBtn: {
+    backgroundColor: colors.primaryBlue,
+    paddingVertical: 16,
+    paddingHorizontal: 30,
+    borderRadius: 18,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  primaryBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  secondaryBtn: {
+    marginTop: 15,
+    paddingVertical: 10,
+  },
+  secondaryBtnText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  footerNote: {
+    fontSize: 11,
+    color: '#aaa',
+    marginTop: 20,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  pickerWrapper: {
+    width: '100%',
+    height: 200, // Required for the spinner to show up on iOS
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+    overflow: 'hidden', // Keeps the spinner contained
+  },
+  iosPicker: {
+    width: '100%',
+    height: '100%',
+  },
+  // Ensure your premiumModal doesn't have "alignItems: center" 
+  // blocking the picker's width
+  premiumModal: {
+    backgroundColor: '#fff',
+    borderRadius: 30,
+    padding: 25,
+    width: '90%',
+    alignSelf: 'center', // Centers the modal itself
+    alignItems: 'center', // Centers the text/icons inside
   }
 });
 

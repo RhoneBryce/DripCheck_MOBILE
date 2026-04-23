@@ -26,7 +26,13 @@ const accountSchema = new mongoose.Schema(
       type: String,
       default: '', 
     },
+    notificationTime: {
+      hours: { type: Number, default: 8 }, // Default to 8 AM
+      minutes: { type: Number, default: 0 }
+    },
+    hasSetPreferences: { type: Boolean, default: false }
   },
-  { timestamps: true }
+  { timestamps: true },
+  
 );
 module.exports = mongoose.model('Account', accountSchema);
