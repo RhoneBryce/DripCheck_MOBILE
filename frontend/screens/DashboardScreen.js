@@ -9,7 +9,7 @@ import ProfileScreen from './ProfileScreen';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-const DashboardScreen = ({ user, onLogout }) => {
+const DashboardScreen = ({ user, onLogout, setUser }) => {
   const [activeTab, setActiveTab] = useState('Home');
 
   const renderTabContent = () => {
@@ -21,7 +21,7 @@ const DashboardScreen = ({ user, onLogout }) => {
       case 'Trend':
         return <TrendScreen API_URL={API_URL} />;
       case 'Profile':
-        return <ProfileScreen user={user} API_URL={API_URL} />;
+        return <ProfileScreen onLogout={onLogout} setUser={setUser} user={user} API_URL={API_URL} />;
       default:
         return <HomeScreen onLogout={onLogout} />;
     }

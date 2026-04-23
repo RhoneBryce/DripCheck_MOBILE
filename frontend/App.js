@@ -71,6 +71,7 @@ export default function App() {
               <DashboardScreen 
                 {...props} 
                 user={user} 
+                setUser={setUser}
                 onLogout={() => {
                   setUser(null); // Clear the user data
                   props.navigation.replace('Login'); // Kick them back to the login screen

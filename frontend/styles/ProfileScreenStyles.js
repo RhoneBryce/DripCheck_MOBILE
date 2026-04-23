@@ -121,6 +121,29 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
   },
+    fullImage: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#eee' },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 5,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+  },
+  changePhotoText: { fontSize: 12, color: colors.primaryBlue, marginTop: 8, textAlign: 'center', fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#fff', borderRadius: 20, padding: 25 },
+  modalTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: colors.textPrimary },
+  label: { fontSize: 13, color: '#666', marginBottom: 5, fontWeight: '600' },
+  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12, marginBottom: 15, color: colors.textPrimary },
+  saveBtn: { backgroundColor: colors.primaryBlue, padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 10 },
+  saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  cancelText: { textAlign: 'center', marginTop: 20, color: 'red', fontWeight: '600' }
 });
 
 export default styles;

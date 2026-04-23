@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, ScrollView, ActivityIndicator, Image, Alert, Modal, TextInput, StyleSheet } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StatusBar, 
+  ScrollView, 
+  ActivityIndicator, 
+  Image, 
+  Alert, 
+  Modal, 
+  TextInput, 
+  StyleSheet 
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import colors from '../constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,18 +19,23 @@ import styles from '../styles/ProfileScreenStyles';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImageToCloudinary } from '../utils/closetHelpers';
 
-const ProfileScreen = ({ user, setUser, API_URL }) => {
+const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
   const [itemCount, setItemCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [localImage, setLocalImage] = useState(null); 
   
-  // Edit Modal State
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editForm, setEditForm] = useState({
-    name: user.name,
+    name: user?.name || '',
     password: '',
     confirmPassword: ''
   });
+
+  // Sync form name if user object updates
+  useEffect(() => {
+    if (user?.name) setEditForm(prev => ({ ...prev, name: user.name }));
+  }, [user]);
 
   useEffect(() => {
     const fetchProfileStats = async () => {
@@ -37,7 +54,7 @@ const ProfileScreen = ({ user, setUser, API_URL }) => {
     if (user?.id) fetchProfileStats();
   }, [user, API_URL]);
 
-  const handleEditPhoto = async () => {
+  const handlePickPhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert('Permission Denied', 'Gallery access is needed to change your photo.');
@@ -52,23 +69,33 @@ const ProfileScreen = ({ user, setUser, API_URL }) => {
     });
 
     if (!result.canceled) {
-      updateProfile({ profileImage: result.assets[0].uri }, true);
+      setLocalImage(result.assets[0].uri);
+      setEditModalVisible(true); // Ensure modal is open to see preview
     }
   };
 
-  const updateProfile = async (updateData, isImage = false) => {
+  const handleSaveAllDetails = async () => {
+    if (!editForm.name.trim()) return Alert.alert('Error', 'Name cannot be empty');
+    
     setUpdating(true);
     try {
-      let payload = { ...updateData };
+      let payload = { name: editForm.name };
 
-      // 1. If it's an image, upload to Cloudinary first
-      if (isImage) {
-        const cloudUrl = await uploadImageToCloudinary(updateData.profileImage);
+      // 1. Upload image only if changed
+      if (localImage) {
+        const cloudUrl = await uploadImageToCloudinary(localImage);
         if (!cloudUrl) throw new Error("Cloudinary upload failed");
         payload.profileImage = cloudUrl;
       }
 
-      // 2. Save to Backend
+      // 2. Password validation
+      if (editForm.password) {
+        if (editForm.password.length < 6) throw new Error("Password must be at least 6 characters");
+        if (editForm.password !== editForm.confirmPassword) throw new Error("Passwords do not match");
+        payload.password = editForm.password;
+      }
+
+      // 3. Send to Backend
       const response = await fetch(`${API_URL}/api/auth/update/${user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -78,8 +105,12 @@ const ProfileScreen = ({ user, setUser, API_URL }) => {
       const updatedUser = await response.json();
       
       if (response.ok) {
-        setUser({ ...user, ...updatedUser });
+        // Crucial: Update global state
+        if (setUser) {
+          setUser({ ...user, ...updatedUser });
+        }
         Alert.alert('Success', 'Profile updated successfully!');
+        setLocalImage(null);
         setEditModalVisible(false);
         setEditForm(prev => ({ ...prev, password: '', confirmPassword: '' }));
       } else {
@@ -92,21 +123,6 @@ const ProfileScreen = ({ user, setUser, API_URL }) => {
     }
   };
 
-  const handleSaveDetails = () => {
-    if (!editForm.name.trim()) return Alert.alert('Error', 'Name cannot be empty');
-    
-    let payload = { name: editForm.name };
-
-    // Only include password if the user actually typed something
-    if (editForm.password) {
-      if (editForm.password.length < 6) return Alert.alert('Error', 'Password must be at least 6 characters');
-      if (editForm.password !== editForm.confirmPassword) return Alert.alert('Error', 'Passwords do not match');
-      payload.password = editForm.password;
-    }
-
-    updateProfile(payload);
-  };
-
   return (
     <LinearGradient colors={[colors.offWhiteBackground, colors.mainWhite]} style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.offWhiteBackground} />
@@ -115,25 +131,18 @@ const ProfileScreen = ({ user, setUser, API_URL }) => {
           
           {/* Profile Header */}
           <View style={styles.profileHeader}>
-            <TouchableOpacity onPress={handleEditPhoto} disabled={updating}>
+            <TouchableOpacity onPress={() => setEditModalVisible(true)} activeOpacity={0.8}>
               <View style={styles.profilePicture}>
-                {updating ? (
-                  <ActivityIndicator color={colors.primaryBlue} />
-                ) : user.profileImage ? (
-                  <Image source={{ uri: user.profileImage }} style={localStyles.fullImage} />
+                {user.profileImage ? (
+                  <Image source={{ uri: user.profileImage }} style={styles.fullImage} />
                 ) : (
                   <Text style={styles.profileIcon}>👤</Text>
                 )}
               </View>
-              <Text style={localStyles.changePhotoText}>Tap to change</Text>
+              <Text style={styles.changePhotoText}>Tap to Edit Profile</Text>
             </TouchableOpacity>
 
             <Text style={styles.handle}>{user.name || 'User'}</Text>
-            <Text style={styles.emailSubtext}>{user.email}</Text>
-
-            <TouchableOpacity style={styles.editButton} onPress={() => setEditModalVisible(true)}>
-              <Text style={styles.editButtonText}>Edit Details</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Stats */}
@@ -144,7 +153,7 @@ const ProfileScreen = ({ user, setUser, API_URL }) => {
             </View>
           </View>
 
-          {/* Details Section */}
+          {/* Details Section (Read Only View) */}
           <View style={styles.detailsSection}>
             <Text style={styles.sectionTitle}>Account Details</Text>
             <View style={styles.detailRow}>
@@ -163,49 +172,72 @@ const ProfileScreen = ({ user, setUser, API_URL }) => {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.logoutButton} onPress={() => console.log("Sign out")}>
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={onLogout || (() => console.log("Logout"))}
+          >
             <Text style={styles.logoutButtonText}>Sign Out</Text>
           </TouchableOpacity>
 
         </ScrollView>
       </SafeAreaView>
 
-      {/* EDIT MODAL */}
+      {/* UNIFIED EDIT MODAL */}
       <Modal visible={editModalVisible} animationType="slide" transparent>
-        <View style={localStyles.modalOverlay}>
-          <View style={localStyles.modalContent}>
-            <Text style={localStyles.modalTitle}>Edit Profile</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Profile</Text>
             
-            <Text style={localStyles.label}>Full Name</Text>
+            {/* TAPPABLE PREVIEW IMAGE */}
+            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+              <TouchableOpacity onPress={handlePickPhoto}>
+                <Image 
+                  source={{ uri: localImage || user.profileImage || 'https://via.placeholder.com/100' }} 
+                  style={styles.fullImage} 
+                />
+                <View style={styles.cameraBadge}>
+                   <Text style={{fontSize: 12}}>📸</Text>
+                </View>
+              </TouchableOpacity>
+              <Text style={{ color: colors.textSecondary, marginTop: 8, fontSize: 12 }}>
+                Tap photo to change
+              </Text>
+            </View>
+
+            <Text style={styles.label}>Full Name</Text>
             <TextInput 
-              style={localStyles.input} 
+              style={styles.input} 
               value={editForm.name} 
               onChangeText={(t) => setEditForm({...editForm, name: t})}
             />
 
-            <Text style={localStyles.label}>New Password (leave blank to keep current)</Text>
+            <Text style={styles.label}>New Password</Text>
             <TextInput 
-              style={localStyles.input} 
+              style={styles.input} 
               secureTextEntry 
-              placeholder="Min 6 characters"
+              placeholder="Leave blank to keep current"
               value={editForm.password}
               onChangeText={(t) => setEditForm({...editForm, password: t})}
             />
 
-            <Text style={localStyles.label}>Confirm New Password</Text>
+            <Text style={styles.label}>Confirm New Password</Text>
             <TextInput 
-              style={localStyles.input} 
+              style={styles.input} 
               secureTextEntry 
               value={editForm.confirmPassword}
               onChangeText={(t) => setEditForm({...editForm, confirmPassword: t})}
             />
 
-            <TouchableOpacity style={localStyles.saveBtn} onPress={handleSaveDetails} disabled={updating}>
-               {updating ? <ActivityIndicator color="#fff"/> : <Text style={localStyles.saveBtnText}>Save Changes</Text>}
+            <TouchableOpacity 
+              style={[styles.saveBtn, updating && { opacity: 0.7 }]} 
+              onPress={handleSaveAllDetails} 
+              disabled={updating}
+            >
+               {updating ? <ActivityIndicator color="#fff"/> : <Text style={styles.saveBtnText}>Save All Changes</Text>}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-              <Text style={localStyles.cancelText}>Cancel</Text>
+            <TouchableOpacity onPress={() => { setEditModalVisible(false); setLocalImage(null); }}>
+              <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -214,17 +246,5 @@ const ProfileScreen = ({ user, setUser, API_URL }) => {
   );
 };
 
-const localStyles = StyleSheet.create({
-  fullImage: { width: 100, height: 100, borderRadius: 50 },
-  changePhotoText: { fontSize: 12, color: colors.primaryBlue, marginTop: 5, textAlign: 'center' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#fff', borderRadius: 20, padding: 20 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
-  label: { fontSize: 14, color: '#666', marginBottom: 5 },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12, marginBottom: 15 },
-  saveBtn: { backgroundColor: colors.primaryBlue, padding: 15, borderRadius: 10, alignItems: 'center' },
-  saveBtnText: { color: '#fff', fontWeight: 'bold' },
-  cancelText: { textAlign: 'center', marginTop: 15, color: 'red' }
-});
 
 export default ProfileScreen;
