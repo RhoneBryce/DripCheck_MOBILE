@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Modal,
-  Image,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import styles from '../styles/ClosetScreenStyles';
 import colors from '../constants/colors';
+import { Alert, Platform } from 'react-native';
+
+
 
 const weatherOptions = ['hot', 'warm', 'cold', 'rainy'];
 const layerWeights = ['light', 'medium', 'heavy'];
@@ -26,6 +20,7 @@ const ClothingFormModal = ({
   onClose,
   categories,
   getCategoryIcon,
+  isUploading
 }) => {
   const [imageError, setImageError] = useState(false);
 
@@ -33,27 +28,6 @@ const ClothingFormModal = ({
     setImageError(false);
   }, [itemForm.imageUri, visible]);
 
-  const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      alert('Permission required to access photos');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-      setImageError(false);
-      setItemForm({
-        ...itemForm,
-        imageUri: result.assets[0].uri,
-      });
-    }
-  };
 
   const toggleWeatherTag = (tag) => {
     const selected = itemForm.weatherTags.includes(tag);
@@ -63,6 +37,52 @@ const ClothingFormModal = ({
       : [...itemForm.weatherTags, tag];
 
     setItemForm({ ...itemForm, weatherTags: updatedTags });
+  };
+// Helper to handle the result from either picker
+  const handlePickerResult = (result) => {
+    if (!result.canceled) {
+      setImageError(false);
+      setItemForm({
+        ...itemForm,
+        imageUri: result.assets[0].uri,
+      });
+    }
+  };
+
+  const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      alert('Permission required to access photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Use the constant
+      quality: 0.7,
+    });
+    handlePickerResult(result);
+  };
+
+  const takePhoto = async () => {
+    // Camera is not supported in the web browser via this Expo API
+    if (Platform.OS === 'web') {
+      alert('Camera is only supported on mobile devices. Use "Upload from Gallery".');
+      return;
+    }
+
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      alert('Permission required to use the camera');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsEditing: true, // Optional: let user crop the photo
+      aspect: [1, 1],      // Forces a square photo
+    });
+    handlePickerResult(result);
   };
 
   const showImage = itemForm.imageUri && !imageError;
@@ -87,36 +107,46 @@ const ClothingFormModal = ({
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            <TouchableOpacity
-              style={localStyles.imagePickerContainer}
-              onPress={pickImage}
-              activeOpacity={0.85}
-            >
-              {showImage ? (
-                <>
-                  <Image
-                    source={{ uri: itemForm.imageUri }}
-                    style={localStyles.previewImage}
-                    resizeMode="cover"
-                    onError={() => setImageError(true)}
-                  />
-                  <Text style={localStyles.helperText}>Tap to replace image</Text>
-                </>
-              ) : (
-                <>
+            {/* CENTERED TOP SECTION */}
+            <View style={localStyles.topSectionContainer}>
+              
+              {/* Centered Image Preview Box */}
+              <View style={localStyles.imagePreviewContainer}>
+                {showImage ? (
+                  <>
+                    <Image
+                      source={{ uri: itemForm.imageUri }}
+                      style={localStyles.previewImage}
+                      resizeMode="cover"
+                      onError={() => setImageError(true)}
+                    />
+                    <Text style={localStyles.helperText}>Ready to upload!</Text>
+                  </>
+                ) : (
                   <View style={localStyles.placeholderBox}>
-                    <Text style={localStyles.placeholderIcon}>🖼️</Text>
+                    <Text style={localStyles.placeholderIcon}>👕</Text>
+                    <Text style={localStyles.placeholderTitle}>No image selected</Text>
                   </View>
+                )}
+              </View>
 
-                  <Text style={localStyles.placeholderTitle}>
-                    {itemForm.imageUri ? 'Image not found' : 'No image selected'}
-                  </Text>
-                  <Text style={localStyles.placeholderSubtitle}>
-                    Tap to Upload
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
+              {/* Styled Action Buttons in a Row */}
+              <View style={localStyles.uploadOptionsRow}>
+                <TouchableOpacity 
+                  style={[localStyles.actionButton, { marginRight: 12 }]} 
+                  onPress={takePhoto}
+                >
+                  <Text style={localStyles.actionButtonText}>📸 Take Photo</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={localStyles.actionButton} 
+                  onPress={pickImage}
+                >
+                  <Text style={localStyles.actionButtonText}>🖼️ Gallery</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.modalLabel}>Name *</Text>
@@ -266,10 +296,15 @@ const ClothingFormModal = ({
             <TouchableOpacity
               style={styles.saveButton}
               onPress={onSave}
+              disabled={isUploading} // Prevent double-clicking
             >
-              <Text style={styles.saveButtonText}>
-                {editingItem ? 'Update Item' : 'Add to Closet'}
-              </Text>
+              {isUploading ? (
+                <ActivityIndicator color={colors.mainWhite} />
+              ) : (
+                <Text style={styles.saveButtonText}>
+                  {editingItem ? 'Update Item' : 'Add to Closet'}
+                </Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -279,15 +314,22 @@ const ClothingFormModal = ({
 };
 
 const localStyles = StyleSheet.create({
-  imagePickerContainer: {
-    alignItems: 'center',
+  topSectionContainer: {
+    alignItems: 'center', // This is the fix for the left-alignment!
     marginBottom: 20,
+    marginTop: 10,
+  },
+  imagePreviewContainer: {
+    marginBottom: 15,
+    alignItems: 'center',
   },
   previewImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 12,
-    backgroundColor: '#D9D9D9',
+    width: 140,
+    height: 140,
+    borderRadius: 15,
+    backgroundColor: '#F0F0F0',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   helperText: {
     marginTop: 8,
@@ -296,29 +338,49 @@ const localStyles = StyleSheet.create({
     fontWeight: '600',
   },
   placeholderBox: {
-    width: 120,
-    height: 120,
-    borderRadius: 12,
-    backgroundColor: '#D9D9D9',
+    width: 140,
+    height: 140,
+    borderRadius: 15,
+    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderStyle: 'dashed',
   },
   placeholderIcon: {
-    fontSize: 32,
-    color: '#7A7A7A',
+    fontSize: 40,
+    marginBottom: 8,
   },
   placeholderTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  placeholderSubtitle: {
-    fontSize: 12,
     color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 2,
+    fontWeight: '500',
+  },
+  uploadOptionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  // These are the new styled buttons
+  actionButton: {
+    backgroundColor: colors.mainWhite,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primaryBlue,
+    // Add a slight shadow for depth
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  actionButtonText: {
+    color: colors.primaryBlue,
+    fontWeight: '700',
+    fontSize: 13,
   },
 });
 

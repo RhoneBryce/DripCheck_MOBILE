@@ -1,4 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import { Platform } from 'react-native';
+
 
 export const categories = [
   'All', 'Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Footwear', 'Accessories', 'Swimwear', 'Traditional',
@@ -11,25 +13,48 @@ export const getCategoryIcon = (category) => {
   return icons[category] || '👕';
 };
 
-export const saveImageToDocumentStorage = async (uri) => {
-  if (!uri) return '';
+export const uploadImageToCloudinary = async (localUri) => {
   try {
-    if (FileSystem.documentDirectory && uri.startsWith(FileSystem.documentDirectory)) {
-      return uri;
+    const data = new FormData();
+    
+    if (Platform.OS === 'web') {
+      // THE FIX FOR WEB:
+      // We must fetch the blob data and convert it to a format Cloudinary understands
+      const response = await fetch(localUri);
+      const blob = await response.blob();
+      
+      // Append the actual blob file
+      data.append('file', blob);
+    } else {
+      // Standard Mobile Logic
+      data.append('file', {
+        uri: localUri,
+        type: 'image/jpeg',
+        name: 'upload.jpg',
+      });
     }
-    const folderPath = `${FileSystem.documentDirectory}clothing-images/`;
-    const folderInfo = await FileSystem.getInfoAsync(folderPath);
-    if (!folderInfo.exists) {
-      await FileSystem.makeDirectoryAsync(folderPath, { intermediates: true });
+    
+    data.append('upload_preset', process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET);
+    data.append('cloud_name', process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME);
+
+    const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+    const res = await fetch(cloudinaryUrl, {
+      method: 'POST',
+      body: data,
+    });
+
+    const cloudData = await res.json();
+
+    if (cloudData.error) {
+      console.error("Cloudinary Error:", cloudData.error.message);
+      return null;
     }
-    const originalName = uri.split('/').pop() || 'clothing.jpg';
-    const cleanName = originalName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    const newPath = `${folderPath}${Date.now()}-${cleanName}`;
-    await FileSystem.copyAsync({ from: uri, to: newPath });
-    return newPath;
+
+    return cloudData.secure_url;
   } catch (error) {
-    console.error('Error saving image:', error);
-    throw new Error('Failed to save image locally');
+    console.error("Upload process failed:", error);
+    return null;
   }
 };
 

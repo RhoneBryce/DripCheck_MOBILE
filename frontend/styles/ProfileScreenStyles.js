@@ -75,6 +75,52 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 4,
   },
+  // ... existing styles ...
+  emailSubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 15,
+  },
+  detailsSection: {
+    marginTop: 30,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 15,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  logoutButton: {
+    marginTop: 40,
+    marginHorizontal: 20,
+    padding: 15,
+    borderRadius: 12,
+    backgroundColor: '#FFF1F1', // Light red background
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  logoutButtonText: {
+    color: '#FF4D4D', // Red text
+    fontWeight: '700',
+    fontSize: 16,
+  },
 });
 
 export default styles;

@@ -4,6 +4,24 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Clothing = require('../models/Clothing');
 
+
+
+// Inside your outfits route file
+router.get('/', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+    
+    // Find all outfits belonging to this user
+    const outfits = await Outfit.find({ userId });
+    res.json(outfits);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 router.get('/recommend/:userId', async (req, res) => {
   try {
     const { userId } = req.params;

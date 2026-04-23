@@ -11,7 +11,7 @@ import styles from '../styles/ClosetScreenStyles';
 import { 
   categories, 
   getCategoryIcon, 
-  saveImageToDocumentStorage, 
+  uploadImageToCloudinary,
   apiFetchClothing, 
   apiCreateClothing, 
   apiUpdateClothing, 
@@ -81,7 +81,21 @@ const ClosetScreen = ({ setActiveTab, user, API_URL }) => {
 
     try {
       setSaving(true);
-      const finalImageUri = await saveImageToDocumentStorage(itemForm.imageUri);
+      let finalImageUri = itemForm.imageUri;
+
+      // Only upload if there is a local image (file://) 
+      if (finalImageUri && !finalImageUri.startsWith('http')) {
+        const cloudUrl = await uploadImageToCloudinary(finalImageUri);
+        
+        if (!cloudUrl) {
+          Alert.alert('Upload Failed', 'Could not save image to cloud. Please try again.');
+          setSaving(false);
+          return;
+        }
+        // Swap the local device path for the permanent Cloudinary URL
+        finalImageUri = cloudUrl; 
+      }
+
       const payload = { ...itemForm, name: itemForm.name.trim(), color: itemForm.color.trim(), imageUri: finalImageUri };
 
       if (editingItem) {
