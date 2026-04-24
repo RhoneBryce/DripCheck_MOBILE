@@ -34,6 +34,7 @@ const accountSchema = new mongoose.Schema(
     // 💡 NEW FIELDS FOR OTP
     resetOtp: { type: String, default: null },
     resetOtpExpires: { type: Date, default: null },
+    verified: { type: Boolean, default: false }
   },
   { timestamps: true },
   

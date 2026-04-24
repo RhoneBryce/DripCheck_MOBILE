@@ -14,43 +14,43 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// 🚀 1. REGISTRATION - SEND OTP
+
+// 🚀 1. REGISTER (Initial Step)
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
-
-    // Generic response for privacy
     const successMsg = { message: 'If the email is valid, a verification code has been sent.' };
 
     const existingUser = await Account.findOne({ email });
     
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = Date.now() + 15 * 60 * 1000;
-
-    if (existingUser) {
-      // EMAIL PRIVACY: Send "Already Registered" email instead of an error to the app
+    // Privacy Logic: If they already exist and ARE verified, don't tell the app.
+    // Send them an email instead.
+    if (existingUser && existingUser.verified) {
       const mailOptions = {
         from: `"DripCheck App" <${process.env.EMAIL_USER}>`,
         to: email,
         subject: 'DripCheck - Account Already Exists',
-        html: `<p>Hello ${name}, you already have an account! Please log in instead.</p>`
+        html: `<p>Hello ${name}, you already have a verified account! Please login or reset your password.</p>`
       };
-      await transporter.sendMail(mailOptions);
+      await transporter.sendMail(mailOptions).catch(err => console.log("Mail error:", err));
       return res.status(200).json(successMsg);
     }
 
-    // Since we don't want to create the user yet, we temporarily store 
-    // the hashed password and OTP on a "Pending" basis.
-    // FOR THE DEMO: You can reuse your Account model by adding 'isVerified: false'
-    // OR just use a temporary 'resetOtp' style field for registration.
-    
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = Date.now() + 15 * 60 * 1000;
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // We update/upsert a user that is NOT YET verified
+
+    // Upsert the data. If an unverified user exists, it updates their OTP/Password.
+    // If no user exists, it creates a new one with verified: false.
     await Account.findOneAndUpdate(
       { email },
-      { name, password: hashedPassword, resetOtp: otp, resetOtpExpires: otpExpires },
+      { 
+        name, 
+        password: hashedPassword, 
+        resetOtp: otp, 
+        resetOtpExpires: otpExpires,
+        verified: false 
+      },
       { upsert: true, new: true }
     );
 
@@ -58,7 +58,7 @@ router.post('/register', async (req, res) => {
       from: `"DripCheck App" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'DripCheck - Verify your Account',
-      html: `<h2>Welcome to DripCheck!</h2><p>Your code is: <strong>${otp}</strong></p>`
+      html: `<h2>Welcome to DripCheck!</h2><p>Your verification code is: <strong>${otp}</strong></p>`
     };
 
     await transporter.sendMail(mailOptions);
@@ -68,7 +68,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// 🚀 2. VERIFY REGISTRATION (Finalizes account)
+// 🚀 2. VERIFY REGISTRATION (Final Step)
 router.post('/verify-registration', async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -78,27 +78,32 @@ router.post('/verify-registration', async (req, res) => {
       resetOtpExpires: { $gt: Date.now() }
     });
 
-    if (!user) return res.status(400).json({ message: 'Invalid or expired code.' });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired code.' });
+    }
 
+    // Flip the switch to TRUE
+    user.verified = true;
     user.resetOtp = null;
     user.resetOtpExpires = null;
-    // user.isVerified = true; (Optional: add this field to your model)
     await user.save();
 
-    res.status(201).json({ message: 'Account verified and created!' });
+    res.status(201).json({ message: 'Account verified successfully!' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// LOGIN
+// 🚀 3. LOGIN (Updated with Verification Check)
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
     const foundUser = await Account.findOne({ email }); 
-    if (!foundUser) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+    
+    // Check if user exists AND is verified
+    if (!foundUser || !foundUser.verified) {
+      return res.status(401).json({ message: 'Invalid credentials or unverified account' });
     }
 
     const isMatch = await bcrypt.compare(password, foundUser.password);
@@ -106,7 +111,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    const { password: userPassword, __v, ...userData } = foundUser._doc;
+    const { password: userPassword, resetOtp, resetOtpExpires, __v, ...userData } = foundUser._doc;
 
     return res.json({
       message: 'Login successful',
@@ -116,7 +121,6 @@ router.post('/login', async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Login Error:", err);
     return res.status(500).json({ message: err.message });
   }
 });
