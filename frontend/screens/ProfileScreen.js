@@ -23,6 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 // NEW IMPORTS FOR NOTIFICATIONS
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { scheduleDailyOutfitNotification } from '../utils/notificationHelper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
   const [itemCount, setItemCount] = useState(0);
@@ -92,7 +93,7 @@ const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images, // Explicitly set to Images
+    mediaTypes: ['images'],
     allowsEditing: true,
     aspect: [1, 1],
     quality: 0.5,
@@ -143,10 +144,21 @@ const ProfileScreen = ({ user, setUser, API_URL, onLogout }) => {
       
       if (response.ok) {
         // Crucial: Update global state
+        const mergedUser = { ...user, ...updatedUser };
         if (setUser) {
-          setUser({ ...user, ...updatedUser });
+          setUser(mergedUser);
         }
-        
+        // 3. Update Disk (AsyncStorage) so changes survive a restart!
+        try {
+          const sessionString = await AsyncStorage.getItem('user_session');
+          if (sessionString) {
+            const sessionData = JSON.parse(sessionString);
+            sessionData.user = mergedUser; // Overwrite the old user object
+            await AsyncStorage.setItem('user_session', JSON.stringify(sessionData));
+          }
+        } catch (storageError) {
+          console.error("Could not update disk session:", storageError);
+        }
         if (timeChanged) {
           await scheduleDailyOutfitNotification(tempNotifTime.getHours(), tempNotifTime.getMinutes());
           setTimeChanged(false); // Reset the flag after saving

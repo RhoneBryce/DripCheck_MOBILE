@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../constants/colors';
 import styles from '../styles/LoginScreenStyles';
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation, setUser }) => {
   const [email, setEmail] = useState('');
@@ -108,14 +108,12 @@ const LoginScreen = ({ navigation, setUser }) => {
                     return;
                   }
 
-                  // ✅ 1. Define the session data first!
                   const sessionData = {
                     user: data.user,
                     loginTime: Date.now(),
                     expiresAt: Date.now() + (6 * 60 * 60 * 1000), // 6 hours from now
                   };
-                  // ✅ 3. Update global state and navigate
-                  // Note: If you use a 'setUser' function from Context, call it here
+                  await AsyncStorage.setItem('user_session', JSON.stringify(sessionData));
                   if (setUser) setUser(data.user); 
                   
                   navigation.replace('Dashboard');
