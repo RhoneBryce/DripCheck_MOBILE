@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StatusBar, KeyboardAvoidingView, ScrollView, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StatusBar, KeyboardAvoidingView, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../constants/colors';
 import styles from '../styles/SignUpScreenStyles';
+import { Platform } from 'react-native';
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const SignUpScreen = ({ navigation }) => {
@@ -12,15 +13,35 @@ const SignUpScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
   // OTP States
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otp, setOtp] = useState('');
   const [verifying, setVerifying] = useState(false);
 
+  // Helper function to validate email format
+  const validateEmail = (email) => {
+    const re = /\S+@\S+\.\S+/;
+    return re.test(email);
+  };
+
   // STEP 1: Request Registration OTP
   const handleSignUpRequest = async () => {
-    if (!name || !email || !password) {
-      alert('Please fill in all fields');
+    // 1. Check for empty fields
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      Alert.alert('Validation Error', 'Please fill in all fields');
+      return;
+    }
+
+    // 2. Validate Email Format
+    if (!validateEmail(email)) {
+      Alert.alert('Validation Error', 'Please enter a valid email address');
+      return;
+    }
+
+    // 3. Validate Password Length (8 characters)
+    if (password.length < 8) {
+      Alert.alert('Validation Error', 'Password must be at least 8 characters long');
       return;
     }
 
@@ -35,13 +56,12 @@ const SignUpScreen = ({ navigation }) => {
       const data = await res.json();
 
       if (res.ok) {
-        // Even if the email exists, the backend returns success for privacy
         setShowOtpModal(true); 
       } else {
-        alert(data.message || 'Registration failed');
+        Alert.alert('Registration Failed', data.message || 'Something went wrong');
       }
     } catch (err) {
-      alert('Network error: ' + err.message);
+      Alert.alert('Network Error', err.message);
     } finally {
       setLoading(false);
     }
@@ -50,7 +70,7 @@ const SignUpScreen = ({ navigation }) => {
   // STEP 2: Verify OTP and Create Account
   const handleVerifyOtp = async () => {
     if (otp.length !== 6) {
-      alert('Please enter the 6-digit code');
+      Alert.alert('Invalid Code', 'Please enter the 6-digit code');
       return;
     }
 
@@ -65,18 +85,19 @@ const SignUpScreen = ({ navigation }) => {
       const data = await res.json();
 
       if (res.ok) {
-        alert('Account created successfully!');
+        Alert.alert('Success', 'Account created successfully!');
         setShowOtpModal(false);
         navigation.replace('Login');
       } else {
-        alert(data.message || 'Invalid OTP');
+        Alert.alert('Error', data.message || 'Invalid OTP');
       }
     } catch (err) {
-      alert('Verification error');
+      Alert.alert('Error', 'Verification failed. Please try again.');
     } finally {
       setVerifying(false);
     }
   };
+
   return (
     <LinearGradient
       colors={[colors.mainWhite, colors.offWhiteBackground]}
@@ -86,18 +107,23 @@ const SignUpScreen = ({ navigation }) => {
     >
       <StatusBar barStyle="dark-content" backgroundColor={colors.mainWhite} />
       <SafeAreaView style={styles.authSafeArea}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                navigation.replace('Login'); // ✅ Fallback so it never crashes
+              }
+            }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text style={styles.closeText}>✕</Text>
           </TouchableOpacity>
         </View>
 
-        <KeyboardAvoidingView behavior="padding" style={styles.keyboardAvoid}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardAvoid}>
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
@@ -105,7 +131,6 @@ const SignUpScreen = ({ navigation }) => {
             <View style={styles.content}>
               <Text style={styles.title}>Sign Up</Text>
 
-              {/* Input Fields */}
               <View style={styles.inputContainer}>
                 <View style={styles.inputWrapper}>
                   <TextInput
@@ -133,7 +158,7 @@ const SignUpScreen = ({ navigation }) => {
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
-                    placeholder="Password"
+                    placeholder="Password (min. 8 chars)"
                     placeholderTextColor={colors.textLight}
                     value={password}
                     onChangeText={setPassword}
@@ -152,7 +177,6 @@ const SignUpScreen = ({ navigation }) => {
                 </View>
               </View>
 
-              {/* Sign Up Button */}
               <TouchableOpacity
                 style={styles.loginButton}
                 onPress={handleSignUpRequest}
@@ -161,18 +185,28 @@ const SignUpScreen = ({ navigation }) => {
               >
                 <Text style={styles.loginButtonText}>{loading ? 'Sending Code...' : 'Sign Up'}</Text>
               </TouchableOpacity>
-              {/* OTP MODAL */}
-              <Modal visible={showOtpModal} transparent animationType="slide">
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
-                  <View style={{ backgroundColor: 'white', padding: 30, borderRadius: 15, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>Verify Email</Text>
-                    <Text style={{ textAlign: 'center', color: '#666', marginBottom: 20 }}>
-                      Enter the 6-digit code sent to {email}
+
+              <Modal visible={showOtpModal} transparent animationType="fade">
+                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 }}>
+                  <View style={{ backgroundColor: 'white', padding: 30, borderRadius: 20, alignItems: 'center', elevation: 5 }}>
+                    <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 10, color: '#333' }}>Verify Email</Text>
+                    <Text style={{ textAlign: 'center', color: '#666', marginBottom: 25, lineHeight: 20 }}>
+                      We sent a 6-digit code to{"\n"}<Text style={{fontWeight: 'bold', color: '#333'}}>{email}</Text>
                     </Text>
                     
                     <TextInput
-                      style={{ borderBottomWidth: 1, width: '100%', fontSize: 24, textAlign: 'center', letterSpacing: 5, marginBottom: 20 }}
+                      style={{ 
+                        borderBottomWidth: 2, 
+                        borderColor: colors.primary || '#000',
+                        width: '80%', 
+                        fontSize: 32, 
+                        textAlign: 'center', 
+                        letterSpacing: 8, 
+                        marginBottom: 30,
+                        color: '#333'
+                      }}
                       placeholder="000000"
+                      placeholderTextColor="#ccc"
                       keyboardType="number-pad"
                       maxLength={6}
                       value={otp}
@@ -180,20 +214,20 @@ const SignUpScreen = ({ navigation }) => {
                     />
 
                     <TouchableOpacity 
-                      style={[styles.loginButton, { width: '100%' }]} 
+                      style={[styles.loginButton, { width: '100%', marginBottom: 15 }]} 
                       onPress={handleVerifyOtp}
                       disabled={verifying}
                     >
                       {verifying ? <ActivityIndicator color="white" /> : <Text style={styles.loginButtonText}>Confirm</Text>}
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={() => setShowOtpModal(false)} style={{ marginTop: 15 }}>
-                      <Text style={{ color: 'red' }}>Cancel</Text>
+                    <TouchableOpacity onPress={() => { setShowOtpModal(false); setOtp(''); }} style={{ padding: 10 }}>
+                      <Text style={{ color: '#FF3B30', fontWeight: '600' }}>Cancel</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               </Modal>
-              {/* Already have an account? Login */}
+
               <View style={styles.alreadyAccountContainer}>
                 <Text style={styles.alreadyAccountText}>Already have an Account? </Text>
                 <TouchableOpacity
@@ -210,6 +244,5 @@ const SignUpScreen = ({ navigation }) => {
     </LinearGradient>
   );
 };
-
 
 export default SignUpScreen;
