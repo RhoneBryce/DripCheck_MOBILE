@@ -8,7 +8,7 @@ import OutfitCard from '../components/OutfitCard';
 import styles from '../styles/HomeScreenStyles';
 import DateTimePicker from '@react-native-community/datetimepicker'; 
 import { scheduleDailyOutfitNotification, testInstantNotification } from '../utils/notificationHelper'; // Import the helper
-const OPENWEATHER_API_KEY = 'b2e243eae1e1f558807d9b4ece5696f4';
+const OPENWEATHER_API_KEY = process.env.EXPO_PUBLIC_WEATHER_API_KEY;
 import { Alert } from 'react-native'; // Make sure Alert is imported
 
 
