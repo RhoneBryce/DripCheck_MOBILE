@@ -48,9 +48,30 @@ function App() {
         </div>
 
         {/* App Preview (Dynamic height based on screen size) */}
-        <div className="w-full max-w-4xl h-[250px] sm:h-[350px] md:h-[450px] bg-white/5 border border-white/10 rounded-[24px] flex items-center justify-center text-gray-500 italic shadow-2xl p-4 text-center text-sm sm:text-base">
-
+        <div className="video-wrapper" style={{ display: 'flex', justifyContent: 'center', width: '100%', padding: '20px 0' }}>
+          <div className="video-container" style={{ 
+            width: '100%', 
+            maxWidth: '320px', // Standard phone width for desktop view
+            borderRadius: '24px', // Softer, more "phone-like" corners
+            border: '8px solid #1a1a1a', // Optional: creates a simple "bezel" look
+            overflow: 'hidden', 
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+            backgroundColor: '#000'
+          }}>
+            <video 
+              width="100%" 
+              height="auto" 
+              controls 
+              muted 
+              playsInline
+              style={{ display: 'block' }}
+            >
+              <source src="https://res.cloudinary.com/dmwhbhssm/video/upload/v1777810715/video_20260503_171552_edit_wwbq7o.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
         </div>
+
       </header>
 
       {/* Feature Grid (1 col on mobile, 2 on tablet, 3 on desktop) */}
