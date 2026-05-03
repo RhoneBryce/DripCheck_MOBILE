@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 function App() {
+  const [slide, setSlide] = useState(1);
+  const totalSlides = 9; 
+
+  // Dynamic URL logic for Cloudinary
+  const currentUrl = slide <= totalSlides 
+    ? `https://res.cloudinary.com/dmwhbhssm/image/upload/f_auto,q_auto,pg_${slide}/dripcheck_cxycop.jpg`
+    : "https://res.cloudinary.com/dmwhbhssm/video/upload/v1777810715/video_20260503_171552_edit_wwbq7o.mp4";
+
   return (
     <div className="min-h-screen text-white font-sans selection:bg-dripBlue bg-[radial-gradient(circle_at_50%_50%,_#1a1a2e_0%,_#0f0f12_100%)] overflow-x-hidden">
       
       {/* Navigation */}
-      {/* Navigation */}
       <nav className="p-6 md:p-8 flex justify-between items-center max-w-6xl mx-auto w-full">
-        {/* Logo and Title Container */}
         <div className="flex items-center gap-3">
           <img 
             src="/logo.png" 
@@ -29,7 +35,7 @@ function App() {
           A full-stack mobile solution to manage your digital closet, plan outfits, and keep your style fresh every single day.
         </p>
         
-        {/* Buttons (Full width on mobile, auto width on desktop) */}
+        {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 mb-16 w-full sm:w-auto">
           <a 
             href="https://github.com/Ecila-01/DripCheck_MOBILE/releases/download/v1.0.0/Dripcheck.v1.0.0.apk" 
@@ -47,34 +53,70 @@ function App() {
           </a>
         </div>
 
-        {/* App Preview (Dynamic height based on screen size) */}
-        <div className="video-wrapper" style={{ display: 'flex', justifyContent: 'center', width: '100%', padding: '20px 0' }}>
-          <div className="video-container" style={{ 
+        {/* Integrated Presentation & Video Slider */}
+        <div className="w-full flex flex-col items-center gap-6">
+          <div className="relative group" style={{ 
             width: '100%', 
-            maxWidth: '320px', // Standard phone width for desktop view
-            borderRadius: '24px', // Softer, more "phone-like" corners
-            border: '8px solid #1a1a1a', // Optional: creates a simple "bezel" look
+            maxWidth: '320px', 
+            borderRadius: '24px', 
+            border: '8px solid #1a1a1a', 
             overflow: 'hidden', 
             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
             backgroundColor: '#000'
           }}>
-            <video 
-              width="100%" 
-              height="auto" 
-              controls 
-              muted 
-              playsInline
-              style={{ display: 'block' }}
+            {slide <= totalSlides ? (
+              <img 
+                src={currentUrl} 
+                alt={`Presentation Slide ${slide}`}
+                className="w-full h-auto block animate-in fade-in duration-500"
+              />
+            ) : (
+              <video 
+                width="100%" 
+                height="auto" 
+                controls 
+                muted 
+                playsInline
+                autoPlay
+                className="block"
+              >
+                <source src={currentUrl} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            )}
+
+            {/* Navigation Overlays */}
+            <button 
+              onClick={() => setSlide(s => Math.max(1, s - 1))}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-dripBlue p-2 rounded-full text-white transition-colors"
+              aria-label="Previous Slide"
             >
-              <source src="https://res.cloudinary.com/dmwhbhssm/video/upload/v1777810715/video_20260503_171552_edit_wwbq7o.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+              ←
+            </button>
+            <button 
+              onClick={() => setSlide(s => Math.min(totalSlides + 1, s + 1))}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-dripBlue p-2 rounded-full text-white transition-colors"
+              aria-label="Next Slide"
+            >
+              →
+            </button>
+          </div>
+
+          {/* Indicator Label */}
+          <div className="text-gray-400 font-medium">
+            {slide <= totalSlides ? (
+              <span className="flex items-center gap-2">
+                <span className="text-dripBlue">Slide</span> {slide} / {totalSlides}
+              </span>
+            ) : (
+              <span className="text-dripBlue font-bold tracking-widest animate-pulse">LIVE DEMO</span>
+            )}
           </div>
         </div>
 
       </header>
 
-      {/* Feature Grid (1 col on mobile, 2 on tablet, 3 on desktop) */}
+      {/* Feature Grid */}
       <section className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 px-6 py-16 sm:py-24 pb-24 sm:pb-32 w-full">
         <div className="p-6 sm:p-8 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors duration-300">
           <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-dripBlue">👕 Smart Closet</h3>
@@ -90,7 +132,6 @@ function App() {
           </p>
         </div>
 
-        {/* Centers the 3rd item nicely if viewing on an iPad/Tablet */}
         <div className="p-6 sm:p-8 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors duration-300 sm:col-span-2 lg:col-span-1">
           <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-dripBlue">🔒 Secure Auth</h3>
           <p className="text-gray-400 leading-relaxed text-sm">
