@@ -19,7 +19,7 @@ router.post('/register', async (req, res) => {
     // Privacy Logic: If they already exist and ARE verified
     if (existingUser && existingUser.verified) {
       await resend.emails.send({
-        from: 'DripCheck App <onboarding@resend.dev>',
+        from: 'DripCheck <noreply@dripcheck.lol>',
         to: email,
         subject: 'DripCheck - Account Already Exists',
         html: `<p>Hello ${name}, you already have a verified account! Please login or reset your password.</p>`
@@ -47,7 +47,7 @@ router.post('/register', async (req, res) => {
 
     // 💡 3. SEND REGISTRATION EMAIL VIA RESEND
     await resend.emails.send({
-      from: 'DripCheck App <onboarding@resend.dev>',
+      from: 'DripCheck <noreply@dripcheck.lol>',
       to: email,
       subject: 'DripCheck - Verify your Account',
       html: `<h2>Welcome to DripCheck!</h2><p>Your verification code is: <strong>${otp}</strong></p>`
@@ -159,7 +159,7 @@ router.post('/forgot-password-otp', async (req, res) => {
 
     // 💡 4. SEND PASSWORD RESET EMAIL VIA RESEND
     await resend.emails.send({
-      from: 'DripCheck App <onboarding@resend.dev>',
+      from: 'DripCheck <noreply@dripcheck.lol>',
       to: email,
       subject: 'DripCheck - Password Reset Verification Code',
       html: `
@@ -236,7 +236,7 @@ router.post('/request-delete-otp', async (req, res) => {
 
     // 💡 5. SEND DELETION EMAIL VIA RESEND
     await resend.emails.send({
-      from: 'DripCheck App <onboarding@resend.dev>',
+      from: 'DripCheck <noreply@dripcheck.lol>',
       to: email,
       subject: 'DripCheck - Account Deletion Verification Code',
       html: `
