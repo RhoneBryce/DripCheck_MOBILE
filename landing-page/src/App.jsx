@@ -20,6 +20,7 @@ function App() {
 
   const currentUrl = getCurrentUrl();
   const isVideo = slide > 9;
+  const isPortraitVideo = slide === 11; // The second video is portrait
 
   return (
     <div className="min-h-screen text-white font-sans selection:bg-dripBlue bg-[radial-gradient(circle_at_50%_50%,_#1a1a2e_0%,_#0f0f12_100%)] overflow-x-hidden">
@@ -67,7 +68,7 @@ function App() {
 
         {/* Integrated Presentation & Video Slider - Consumes 80% of screen width */}
         <div className="w-full flex flex-col items-center gap-6">
-          <div className="relative group" style={{ 
+          <div className="relative group flex justify-center" style={{ 
             width: '80vw',
             maxWidth: '1200px',
             borderRadius: '32px',
@@ -83,32 +84,38 @@ function App() {
                 className="w-full h-auto block animate-in fade-in duration-500"
               />
             ) : (
-              <video 
-                key={currentUrl}
-                width="100%" 
-                height="auto" 
-                controls 
-                muted 
-                playsInline
-                autoPlay
-                className="block"
-              >
-                <source src={currentUrl} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              <div className="w-full flex justify-center bg-black">
+                <video 
+                  key={currentUrl}
+                  controls 
+                  muted 
+                  playsInline
+                  autoPlay
+                  className="block animate-in fade-in duration-500"
+                  style={{
+                    width: isPortraitVideo ? 'auto' : '100%',
+                    height: isPortraitVideo ? '70vh' : 'auto',
+                    maxHeight: '80vh',
+                    objectFit: 'contain'
+                  }}
+                >
+                  <source src={currentUrl} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
             )}
 
             {/* Navigation Overlays */}
             <button 
               onClick={() => setSlide(s => Math.max(1, s - 1))}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-dripBlue p-3 rounded-full text-white transition-colors text-2xl"
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-dripBlue p-3 rounded-full text-white transition-colors text-2xl z-10"
               aria-label="Previous Slide"
             >
               ←
             </button>
             <button 
               onClick={() => setSlide(s => Math.min(totalSlides, s + 1))}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-dripBlue p-3 rounded-full text-white transition-colors text-2xl"
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-dripBlue p-3 rounded-full text-white transition-colors text-2xl z-10"
               aria-label="Next Slide"
             >
               →
