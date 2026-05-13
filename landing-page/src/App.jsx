@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 
 function App() {
-  // Start on page 2, total slides reduced to 9 (videos removed)
-  const [slide, setSlide] = useState(2);
-  const totalSlides = 9; 
-
-  const currentUrl = `https://res.cloudinary.com/dmwhbhssm/image/upload/f_auto,q_auto,pg_${slide}/dripcheck_cxycop.jpg`;
+  const [slide, setSlide] = useState(1);
+  const totalSlides = 8; 
+  const currentUrl = `https://res.cloudinary.com/dmwhbhssm/image/upload/f_auto,q_auto,pg_${slide + 1}/dripcheck_cxycop.jpg`;
 
   return (
     <div className="min-h-screen text-white font-sans selection:bg-dripBlue bg-[radial-gradient(circle_at_50%_50%,_#1a1a2e_0%,_#0f0f12_100%)] overflow-x-hidden">
